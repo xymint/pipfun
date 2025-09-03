@@ -1,0 +1,16 @@
+{
+  "assets": [
+    {
+      "url": "http://127.0.0.1:3845/assets/254079758bd51dc25b2313b5e52fec6359d211a6.svg",
+      "out": "logo.svg"
+    },
+    {
+      "url": "http://127.0.0.1:3845/assets/b0e13b89671d112a7d4a6f0fac1da863bdc92b99.svg",
+      "out": "icon-explore.svg"
+    },
+    {
+      "url": "http://127.0.0.1:3845/assets/ca3ad787413635e48ece8d7be56b0527c23defe1.svg",
+      "out": "icon-plus.svg"
+    }
+  ]
+}

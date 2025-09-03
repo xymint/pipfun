@@ -1,26 +1,148 @@
+/* stylelint-disable at-rule-no-unknown */
 @import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@import "tw-animate-css";
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-outfit);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-bagel-fat-one);
+  --font-body: var(--font-outfit);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  /* BG Overlays */
+  --light-overlay-stop-1: rgba(11, 39, 160, 0.3); /* #0B27A0 @ 30% */
+  --light-overlay-stop-2: rgba(9, 26, 158, 0.9);  /* #091A9E @ 90% */
+  --modal-overlay-stop-1: rgba(3, 8, 27, 0.6); /* #03081B @ 60% */
+  --modal-overlay-stop-2: rgba(0, 6, 48, 0.9); /* #000630 @ 90% */
+  --pip-popover: rgba(26, 26, 46, 1); /* #1a1a2e @ 100% */
+
+  /* Radius */
+  --radius-sm: 2px;
+  --radius: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-3xl: 24px;
+  --radius-full: 100%;
+
+  /* Figma named tokens */
+  --base-white: rgba(255, 255, 255, 1);
+  --tokens-background: rgba(19, 19, 32, 1);
+  --tokens-foreground: rgba(226, 226, 245, 1);
+  --tokens-secondary: rgba(45, 43, 85, 1);
+  --tokens-secondary-foreground: rgba(196, 194, 255, 1);
+  --tokens-border: rgba(48, 48, 82, 1);
+  --pip-primary: rgba(255, 132, 0, 1);
+  --pip-primary-foreground: rgba(255, 255, 255, 1);
+  --tokens-primary: var(--pip-primary);
+  --orange-50: rgba(255, 247, 237, 1);
+
+  /* Derived util tokens */
+  --glass-bg: rgba(7, 5, 53, 0.15); /* #070535 @ 15% */
+  --glass-blur: 20px;
+
+  --background: rgba(255, 255, 255, 1);
+  --foreground: rgba(36, 36, 36, 1);
+  --card: rgba(26, 26, 46, 1);
+  --card-foreground: rgba(250, 250, 255, 1);
+  --card-shadow: 0px 4px 6px -4px rgba(0, 0, 0, 0.1), 0px 10px 15px -3px rgba(0, 0, 0, 0.1);
+
+  --popover: rgba(255, 255, 255, 1);
+  --popover-foreground: rgba(36, 36, 36, 1);
+  --primary: rgba(53, 53, 53, 1);
+  --primary-foreground: rgba(251, 251, 251, 1);
+  --secondary: rgba(247, 247, 247, 1);
+  --secondary-foreground: rgba(53, 53, 53, 1);
+  --muted: rgba(34, 34, 68, 1);
+  --muted-foreground: rgba(160, 160, 192, 1);
+  --accent: rgba(247, 247, 247, 1);
+  --accent-foreground: rgba(53, 53, 53, 1);
+  --destructive: rgba(239, 68, 68, 1);
+  --border: rgba(235, 235, 235, 1);
+  --input: rgba(235, 235, 235, 1);
+  --ring: rgba(180, 180, 180, 1);
+  --chart-1: rgba(255, 159, 67, 1);
+  --chart-2: rgba(34, 197, 246, 1);
+  --chart-3: rgba(99, 102, 241, 1);
+  --chart-4: rgba(34, 197, 94, 1);
+  --chart-5: rgba(250, 204, 21, 1);
+  --sidebar: rgba(251, 251, 251, 1);
+  --sidebar-foreground: rgba(36, 36, 36, 1);
+  --sidebar-primary: rgba(53, 53, 53, 1);
+  --sidebar-primary-foreground: rgba(251, 251, 251, 1);
+  --sidebar-accent: rgba(247, 247, 247, 1);
+  --sidebar-accent-foreground: rgba(53, 53, 53, 1);
+  --sidebar-border: rgba(235, 235, 235, 1);
+  --sidebar-ring: rgba(180, 180, 180, 1);
+
+  /* Figma tokens mapping */
+  --tokens-popover: rgba(26, 26, 46, 1);
+  --tokens-popover-foreground: rgba(250, 250, 255, 1);
+  --tokens-shadow-md: 0px 2px 4px -2px rgba(0, 0, 0, 0.1), 0px 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    background-color: rgba(0, 0, 1, 1);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@utility font-display {
+  font-family: var(--font-bagel-fat-one), var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+}
+/* stylelint-enable at-rule-no-unknown */
+
+/* Custom scrollbar utility matching tokens (webkit + firefox) */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--tokens-border) transparent;
+}
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--tokens-border);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
