@@ -44,7 +44,7 @@ export default function ProcessingOverlay({
 
   return (
     <OverlayPortal>
-      <div className="fixed inset-0 z-[120] flex items-center justify-center">
+      <div className="relative z-[120] flex items-center justify-center">
         <div className="relative w-[320px] rounded-[var(--radius-2xl)] bg-white/90 p-6 text-center]">
           <div className="mx-auto mb-6 w-full aspect-square rounded-[var(--radius-xl)] overflow-hidden">
             <video

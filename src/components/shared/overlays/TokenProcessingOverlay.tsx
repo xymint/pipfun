@@ -10,6 +10,7 @@ import { useSocketStore } from "@/store/socketStore";
 import { VersionedTransaction } from "@solana/web3.js";
 import { useTokenCreationFlowStore } from "@/store/tokenCreationFlowStore";
 import { useOverlayStore } from "@/store/overlayStore";
+import { useToastStore } from "@/store/toastStore";
 
 const decodeBase64ToBytes = (b64: string): Uint8Array => {
   const buf = Buffer.from(b64, "base64");
@@ -37,7 +38,6 @@ export default function TokenProcessingOverlay({ tokenId, draftId, onBackToCompl
     startedRef.current = true;
 
     try {
-      console.log("[token-process] start for tokenId=", tokenId);
       // 1) request pool creation transactions
       const createPoolRes = await fetchWithAuth(
         TOKEN_ENDPOINTS.CREATE_TOKEN_POOL(tokenId),
@@ -52,7 +52,7 @@ export default function TokenProcessingOverlay({ tokenId, draftId, onBackToCompl
 
       if (!createPoolRes.ok) {
         const err = await createPoolRes.json().catch(() => ({}));
-        alert(err?.error || "failed to get pool transactions");
+        try { useToastStore.getState().show(err?.error || "failed to get pool transactions", "error"); } catch {}
         // mark failed and return to completion
         try {
           await fetchWithAuth(TOKEN_ENDPOINTS.FAILED_TOKEN_POOL(tokenId), { method: "POST", headers: { "x-wallet-address": signerAddress } });
@@ -62,10 +62,9 @@ export default function TokenProcessingOverlay({ tokenId, draftId, onBackToCompl
       }
 
       const poolData = await createPoolRes.json();
-      console.log("[token-process] createPool ok", poolData);
       const transactions: string[] = poolData?.transactions || [];
       if (!Array.isArray(transactions) || transactions.length === 0) {
-        alert("no transactions received");
+        try { useToastStore.getState().show("no transactions received", "error"); } catch {}
         try {
           await fetchWithAuth(TOKEN_ENDPOINTS.FAILED_TOKEN_POOL(tokenId), { method: "POST", headers: { "x-wallet-address": signerAddress } });
         } catch {}
@@ -74,18 +73,25 @@ export default function TokenProcessingOverlay({ tokenId, draftId, onBackToCompl
       }
 
       const signatures: string[] = [];
-      for (let i = 0; i < transactions.length; i++) {
+      // If returned from mobile deeplink, consume signature from wallet store
+      const deeplink = useWalletStore.getState().deeplinkActionData;
+      const clearDeeplink = useWalletStore.getState().clearDeeplinkActionData;
+      const expectedCtx = tokenId ? `finalizePool:${tokenId}` : undefined;
+      if (deeplink?.action === "signAndSendTransaction" && deeplink.data.signature && (!expectedCtx || deeplink.data.context === expectedCtx)) {
+        signatures.push(deeplink.data.signature);
+        try { clearDeeplink(); } catch {}
+      }
+      for (let i = signatures.length; i < transactions.length; i++) {
         try {
           const bytes = decodeBase64ToBytes(transactions[i]);
           const tx = VersionedTransaction.deserialize(bytes);
-          console.log("[token-process] signing tx", i + 1, "/", transactions.length);
           const signer: any = signerProvider as any;
           if (!signer?.signAndSendTransaction) {
             throw new Error("wallet does not support signAndSendTransaction");
           }
           let signature: string | undefined;
           try {
-            const res = await signer.signAndSendTransaction(tx, "finalizePool");
+            const res = await signer.signAndSendTransaction(tx, expectedCtx || "finalizePool");
             signature = res?.signature as string | undefined;
           } catch (e1: any) {
             // some wallets do not accept extra context parameter
@@ -102,7 +108,7 @@ export default function TokenProcessingOverlay({ tokenId, draftId, onBackToCompl
         } catch (signErr: any) {
           console.error("[token-process] sign error", signErr);
           const msg = signErr?.message || "failed to sign or send transaction";
-          alert(msg);
+          try { useToastStore.getState().show(msg, "error"); } catch {}
           try {
             await fetchWithAuth(TOKEN_ENDPOINTS.FAILED_TOKEN_POOL(tokenId), { method: "POST", headers: { "x-wallet-address": signerAddress } });
           } catch {}
@@ -125,7 +131,7 @@ export default function TokenProcessingOverlay({ tokenId, draftId, onBackToCompl
       );
       if (!finalizeRes.ok) {
         const err = await finalizeRes.json().catch(() => ({}));
-        alert(err?.error || "failed to finalize token pool");
+        try { useToastStore.getState().show(err?.error || "failed to finalize token pool", "error"); } catch {}
         try {
           await fetchWithAuth(TOKEN_ENDPOINTS.FAILED_TOKEN_POOL(tokenId), { method: "POST", headers: { "x-wallet-address": signerAddress } });
         } catch {}
@@ -155,14 +161,14 @@ export default function TokenProcessingOverlay({ tokenId, draftId, onBackToCompl
       } catch {}
       const ok = await useSocketStore.getState().joinTokenRoom(tokenId);
       if (!ok) {
-        alert("failed to join token room");
+        try { useToastStore.getState().show("failed to join token room", "error"); } catch {}
         onBackToCompletion?.();
         return;
       }
       useSocketStore.getState().addTokenStatusListener(tokenId, onStatus);
     } catch (e) {
       console.error("[token-process] error", e);
-      alert(e instanceof Error ? e.message : "unexpected error during pool creation");
+      try { useToastStore.getState().show(e instanceof Error ? e.message : "unexpected error during pool creation", "error"); } catch {}
       try {
         const { walletAddress: latestAddress } = useWalletStore.getState();
         await fetchWithAuth(TOKEN_ENDPOINTS.FAILED_TOKEN_POOL(tokenId), { method: "POST", headers: { "x-wallet-address": (latestAddress || walletAddress)! } });

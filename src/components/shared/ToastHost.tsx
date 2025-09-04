@@ -10,14 +10,13 @@ export default function ToastHost() {
 
   useEffect(() => {
     const computeOffset = () => {
-      // header wrappers in layout
-      const desktop = document.querySelector('div.hidden.md\\:block.sticky.top-0.z-\\[100\\]');
-      const mobile = document.querySelector('div.md\\:hidden.sticky.top-0.z-\\[100\\]');
-      const elems: HTMLElement[] = [];
-      if (desktop instanceof HTMLElement) elems.push(desktop);
-      if (mobile instanceof HTMLElement) elems.push(mobile);
-      const h = elems.reduce((acc, el) => Math.max(acc, el.getBoundingClientRect().height || 0), 0);
-      setTopOffset(h + 16);
+      // Common header wrapper in layout
+      const headerWrap = document.querySelector('div.relative.z-\\[100\\]');
+      let h = 0;
+      if (headerWrap instanceof HTMLElement) {
+        h = headerWrap.getBoundingClientRect().height || 0;
+      }
+      setTopOffset(h + 0);
     };
     computeOffset();
     window.addEventListener('resize', computeOffset);
@@ -40,7 +39,7 @@ export default function ToastHost() {
   };
 
   return (
-    <div className="fixed right-4 z-[120] min-w-[137px] max-w-[388px] space-y-2" style={{ top: topOffset }}>
+    <div className="fixed right-4 z-[130] min-w-[137px] max-w-[388px] space-y-2" style={{ top: topOffset }}>
       {toasts.map((t) => (
         <div key={t.id} className={`rounded-[var(--radius-md)] text-white shadow-[var(--tokens-shadow-md)] p-4 pr-6 ${getStyle(t.type)} relative`}>
           <div className="text-[14px] leading-[20px]">{t.message}</div>

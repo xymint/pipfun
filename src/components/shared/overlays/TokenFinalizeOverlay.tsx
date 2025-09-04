@@ -86,13 +86,13 @@ export default function TokenFinalizeOverlay({ status, tokenId }: { status: "MIN
   }, [tokenIdSafe]);
   return (
     <OverlayPortal>
-      <div key={overlayVersion} className="relative z-[80] flex items-start justify-center pt-24 text-white mb-[120px]">
-        <div className="flex flex-col items-center gap-5">
+      <div key={overlayVersion} className="relative z-[80] flex items-start justify-center pt-[24px] md:pt-[32px] text-white mb-[120px]">
+        <div className="flex flex-col items-center max-w-full">
           {/* Top hero video */}
           <video
             ref={heroVideoRef}
             src="https://still-bird-8438.t3.storage.dev/pf/pf_launched-token.mp4"
-            className="w-[200px] h-[200px] object-cover rounded-[var(--radius-xl)] shadow-lg"
+            className="w-[200px] h-[200px] object-cover rounded-[var(--radius-xl)]"
             muted
             loop
             playsInline

@@ -10,6 +10,7 @@ import TokenFinalizeOverlay from "@/components/shared/overlays/TokenFinalizeOver
 import DraftProcessingOverlay from "@/components/shared/overlays/DraftProcessingOverlay";
 import { useTokenCreationFlowStore } from "@/store/tokenCreationFlowStore";
 import useDebugFlowFromQuery from "@/hooks/useDebugFlowFromQuery";
+import { cn } from "@/lib/utils";
 import { useSearchParams } from "next/navigation";
 
 export default function Home() {
@@ -17,12 +18,15 @@ export default function Home() {
   const resetFlow = useTokenCreationFlowStore((s) => s.reset);
   // hook will drive the flow store based on query, without leaking into rendering logic
   useDebugFlowFromQuery();
+  const searchParams = useSearchParams();
+  const hasDebugStatus = !!(searchParams?.get("status") || "");
 
   // Ensure overlays are cleared whenever Home mounts (arrived from any page)
   useEffect(() => {
+    if (hasDebugStatus) return; // keep debug-driven state
     resetOverlays();
     resetFlow();
-  }, [resetOverlays, resetFlow]);
+  }, [resetOverlays, resetFlow, hasDebugStatus]);
   const flowStep = useTokenCreationFlowStore((s) => s.step);
   const draftId = useTokenCreationFlowStore((s) => s.draftId);
   const tokenId = useTokenCreationFlowStore((s) => s.tokenId);
@@ -32,7 +36,11 @@ export default function Home() {
     <>
       {/* Background overlay is now owned by each component. Keep light/modal for base state. */}
       {/* background overlay removed here; handled by layout */}
-      <section className="w-full overflow-hidden">
+      <section className={cn(
+        "w-full overflow-hidden",
+        "px-4",
+        "md:px-0"
+      )}>
         {/* Only one main child visible depending on flow step */}
         {flowStep === "IDLE" && <TokenCreationCard />}
         {flowStep === "DRAFT_PROCESSING" && <DraftProcessingOverlay />}

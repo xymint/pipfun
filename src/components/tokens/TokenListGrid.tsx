@@ -17,7 +17,7 @@ export default function TokenListGrid({ tokens }: { tokens: Token[] | null }) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 justify-center">
         {sk.map((i) => (
-          <div key={i} className="w-[300px] rounded-[var(--radius-lg)] border border-[var(--tokens-border)] bg-[var(--card)] p-3 flex gap-3">
+          <div key={i} className="w-full md:w-[300px] rounded-[var(--radius-lg)] border border-[var(--tokens-border)] bg-[var(--card)] p-3 flex gap-3">
             <div className="w-[120px] h-[120px] rounded-[var(--radius-md)] overflow-hidden bg-[var(--tokens-secondary)] animate-pulse" />
             <div className="flex flex-col flex-grow">
               <div className="h-[28px] rounded-[var(--radius-md)] bg-[var(--tokens-secondary)] animate-pulse" />
@@ -44,7 +44,7 @@ export default function TokenListGrid({ tokens }: { tokens: Token[] | null }) {
         const cpLabel = cp.toFixed(2);
         const cpWidth = `${Math.max(0, Math.min(100, cp))}%`;
         return (
-          <Link key={t.id} href={`/tokens/${t.id}`} className="w-[300px] rounded-[var(--radius-lg)] border border-[var(--tokens-border)] bg-[var(--card)] p-3 min-w-0 flex gap-3 transition-colors">
+          <Link key={t.id} href={`/tokens/${t.id}`} className="w-full md:w-[300px] rounded-[var(--radius-lg)] border border-[var(--tokens-border)] bg-[var(--card)] p-3 min-w-0 flex gap-3 transition-colors">
             <div className="w-[120px] h-[120px] rounded-[var(--radius-md)] overflow-hidden bg-[var(--tokens-secondary)]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={t.imageUrl || "/token-holder.png"} alt={t.ticker || t.name || "token"} className="w-full h-full object-cover" />

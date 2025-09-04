@@ -24,6 +24,10 @@ export default function BackgroundOverlayHost() {
     if (pathname.startsWith("/my-tokens")) return "DARK";
     if (pathname.startsWith("/tokenlist")) return "DARK";
     if (pathname.startsWith("/tokens/")) return "DARK";
+    if (pathname.startsWith("/terms")) return "DARK";
+    if (pathname.startsWith("/privacy")) return "DARK";
+    if (pathname.startsWith("/content-ip")) return "DARK";
+    if (pathname.startsWith("/fees")) return "DARK";
     return "LIGHT";
   }, [pathname]);
 

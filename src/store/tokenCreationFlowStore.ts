@@ -8,6 +8,7 @@ type TokenCreationFlowState = {
   tokenId?: string;
   finalizeStatus?: "MINTED" | "FAILED";
   statusText?: string;
+  errorHint?: string;
 
   // transitions
   reset: () => void;
@@ -17,6 +18,7 @@ type TokenCreationFlowState = {
   beginTokenProcessing: () => void;
   attachTokenId: (tokenId: string) => void;
   finalize: (status: "MINTED" | "FAILED", tokenId?: string) => void;
+  showErrorHint: (message?: string) => void;
 };
 
 export const useTokenCreationFlowStore = create<TokenCreationFlowState>((set) => ({
@@ -25,12 +27,14 @@ export const useTokenCreationFlowStore = create<TokenCreationFlowState>((set) =>
   tokenId: undefined,
   finalizeStatus: undefined,
   statusText: undefined,
+  errorHint: undefined,
 
-  reset: () => set({ step: "IDLE", draftId: undefined, tokenId: undefined, finalizeStatus: undefined, statusText: undefined }),
+  reset: () => set({ step: "IDLE", draftId: undefined, tokenId: undefined, finalizeStatus: undefined, statusText: undefined, errorHint: undefined }),
   startDraftProcessing: (statusText?: string) => set({ step: "DRAFT_PROCESSING", statusText }),
   attachDraftId: (draftId: string) => set({ draftId }),
   showDraftCompleted: (draftId: string) => set({ step: "DRAFT_COMPLETED", draftId }),
   beginTokenProcessing: () => set({ step: "TOKEN_PROCESSING" }),
   attachTokenId: (tokenId: string) => set({ tokenId }),
   finalize: (status, tokenId) => set({ step: "TOKEN_FINALIZED", finalizeStatus: status, tokenId }),
+  showErrorHint: (message?: string) => set({ step: "IDLE", errorHint: message || "Enter a valid URL" }),
 }));

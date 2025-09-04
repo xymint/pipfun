@@ -10,6 +10,7 @@ import { useToastStore } from "@/store/toastStore";
 import { TOKEN_ENDPOINTS as ENDPOINTS } from "@/constants/apiEndpoints";
 import Link from "next/link";
 import CopyText from "@/utils/CopyText";
+import { cn } from "@/lib/utils";
 
 type MyToken = {
   id: string;
@@ -24,6 +25,8 @@ type MyToken = {
 
 export default function MyTokensPage() {
   const walletAddress = useWalletStore((s) => s.walletAddress);
+  const deeplink = useWalletStore((s) => s.deeplinkActionData);
+  const clearDeeplink = useWalletStore((s) => s.clearDeeplinkActionData);
   const [tokens, setTokens] = useState<MyToken[] | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -55,8 +58,19 @@ export default function MyTokensPage() {
     })();
   }, [page, walletAddress]);
 
+  // Handle mobile deeplink callback for signAndSendTransaction (claim fee)
+  useEffect(() => {
+    if (!deeplink) return;
+    if (deeplink.action === "signAndSendTransaction" && (deeplink.data.context || "").startsWith("claimFee:")) {
+      showToast("creator trading fee claimed successfully", "success");
+      try { clearDeeplink(); } catch {}
+      // Optionally refresh list; keep lightweight
+      // setPage((p) => p);
+    }
+  }, [deeplink, clearDeeplink, showToast]);
+
   return (
-    <div className="w-full h-full flex-grow">
+    <div className="w-full h-full flex-grow mt-[24px] md:mt-[32px] mb-[120px]">
       <div className="relative z-[80] w-full flex flex-col items-center">
         <h1 className="text-[20px] leading-[28px] font-semibold text-white mb-[24px]">My Tokens</h1>
 
@@ -149,7 +163,18 @@ export default function MyTokensPage() {
                               const tx = Transaction.from(Buffer.from(serialized, "base64"));
                               const provider = (await Promise.resolve(useWalletStore.getState().provider)) as any;
                               if (!provider) throw new Error("wallet provider not found");
-                              await provider.signAndSendTransaction(tx);
+                              // Pass context for mobile deeplink to resume safely
+                              const context = `claimFee:${t.id}`;
+                              try {
+                                await provider.signAndSendTransaction(tx, context);
+                              } catch (e1: any) {
+                                // Some providers may not accept extra context param
+                                if (e1?.message?.includes("Missing or invalid parameters") || e1?.code === -32602) {
+                                  await provider.signAndSendTransaction(tx);
+                                } else {
+                                  throw e1;
+                                }
+                              }
                               showToast("creator trading fee claimed successfully", "success");
                             } catch (e: any) {
                               console.error(e);
@@ -160,7 +185,17 @@ export default function MyTokensPage() {
                         >
                           Claim fee
                         </button>
-                        <Link href={`/tokens/${t.id}`} className="h-[36px] min-w-[96px] px-4 rounded-[var(--radius-md)] bg-[var(--tokens-secondary)] text-[var(--tokens-secondary-foreground)] text-[14px] leading-[20px] font-medium inline-flex items-center justify-center">Token Page</Link>
+                        <Link
+                          href={`/tokens/${t.id}`}
+                          className={cn(
+                            "h-[36px] min-w-[96px] rounded-[var(--radius-md)]",
+                            "bg-[var(--tokens-secondary)] text-[var(--tokens-secondary-foreground)]",
+                            "text-[14px] leading-[20px] font-medium",
+                            "inline-flex items-center justify-center"
+                          )}
+                        >
+                          Token Page
+                        </Link>
                       </div>
                     </div>
                   </div>

@@ -27,7 +27,6 @@ export const fetchWithAuth = async (
   options: RequestInit = {},
   includeAuth: boolean = true
 ): Promise<Response> => {
-  console.log(`${API_BASE}/${endpoint}`);
   const headers = mergeHeaders(options.headers as Record<string, string>, includeAuth);
   const res = await fetch(`${API_BASE}/${endpoint}`, { ...options, headers });
   if (res.status === 401) {
@@ -40,7 +39,6 @@ export const fetchPublic = async (
   endpoint: string,
   options: RequestInit = {}
 ): Promise<Response> => {
-  console.log(`${API_BASE}/${endpoint}`);
   const headers = mergeHeaders(options.headers as Record<string, string>, false);
   return fetch(`${API_BASE}/${endpoint}`, { ...options, headers });
 };
@@ -52,7 +50,6 @@ export const fetchFormDataWithAuth = async (
   includeAuth: boolean = true,
   additionalHeaders: Record<string, string> = {}
 ): Promise<Response> => {
-  console.log(`${API_BASE}/${endpoint}`);
   const headers = mergeHeaders(additionalHeaders, includeAuth);
   // do not set Content-Type; browser will set multipart boundary automatically
   delete (headers as any)["Content-Type"];

@@ -6,6 +6,8 @@ import { useWalletStore } from "@/store/walletStore";
 import { shortenMiddle } from "@/utils/string.util";
 import { useOverlayStore } from "@/store/overlayStore";
 import { useTokenCreationFlowStore } from "@/store/tokenCreationFlowStore";
+import { cn } from "@/lib/utils";
+import { isMobile } from "@/utils/device";
 
 export default function Header() {
   const [isConnectOpen, setIsConnectOpen] = useState(false);
@@ -45,7 +47,7 @@ export default function Header() {
   }, [isConnectOpen]);
 
   return (
-    <header className="px-8 py-4">
+    <header className="px-4 py-4 md:px-8 md:py-4">
       <div className="flex h-full items-center justify-between">
         <Link href="/" className="select-none leading-none" onClick={() => { resetOverlays(); resetFlow(); }}>
           <Image src="/logo.svg" alt="pip.fun" width={112} height={27} priority />
@@ -54,18 +56,28 @@ export default function Header() {
         <nav className="flex items-center gap-2">
           <Link
             href="/tokenlist"
-            className="h-11 rounded-[var(--radius-md)] bg-[var(--tokens-secondary)] px-4 text-[16px] leading-[24px] [font-family:var(--font-outfit)] font-medium text-[var(--tokens-secondary-foreground)] flex items-center gap-2"
+            className={cn(
+              "h-9 md:h-11 rounded-[var(--radius-md)] bg-[var(--tokens-secondary)] px-3 md:px-4",
+              "[font-family:var(--font-outfit)] font-medium",
+              "text-[16px] leading-[24px]",
+              "text-[var(--tokens-secondary-foreground)] flex items-center gap-2"
+            )}
           >
-            Explore
+            <span className="hidden md:block">Explore</span>
             <Image src="/icon-explore.svg" alt="Explore" width={13.3} height={13.3} />
           </Link>
 
           <Link
             href="/"
             onClick={() => { resetOverlays(); resetFlow(); }}
-            className="h-11 rounded-[var(--radius-md)] bg-[var(--pip-primary)] px-4 text-[16px] leading-[24px] [font-family:var(--font-outfit)] font-medium text-[var(--pip-primary-foreground)] flex items-center gap-2"
+            className={cn(
+              "h-9 md:h-11 rounded-[var(--radius-md)] bg-[var(--pip-primary)] px-3 md:px-4",
+              "[font-family:var(--font-outfit)] font-medium",
+              "text-[16px] leading-[24px]",
+              "text-[var(--pip-primary-foreground)] flex items-center gap-2"
+            )}
           >
-            Create
+            <span className="hidden md:block">Create</span>
             <Image src="/icon-plus.svg" alt="Create" width={13.3} height={13.3} />
           </Link>
 
@@ -77,7 +89,13 @@ export default function Header() {
               aria-expanded={isConnectOpen}
               aria-controls="connect-dropdown"
               onClick={() => setIsConnectOpen((v) => !v)}
-              className="h-11 rounded-[var(--radius-md)] bg-[var(--tokens-secondary)] px-4 text-[16px] leading-[24px] [font-family:var(--font-outfit)] font-medium text-[var(--tokens-secondary-foreground)] flex items-center cursor-pointer"
+              className={cn(
+                "h-9 md:h-11 rounded-[var(--radius-md)] bg-[var(--tokens-secondary)] px-3 md:px-4",
+                "[font-family:var(--font-outfit)] font-medium",
+                "text-[14px] leading-[20px]",
+                "md:text-[16px] md:leading-[24px]",
+                "text-[var(--tokens-secondary-foreground)] flex items-center cursor-pointer"
+              )}
             >
               {walletAddress
                 ? shortenMiddle(walletAddress, 4, 4)
@@ -123,42 +141,46 @@ export default function Header() {
                     </>
                   ) : (
                     <>
-                  <div className="w-full p-2">
-                    <button
-                      role="menuitem"
-                      className="block w-full text-left px-2 py-1.5 rounded-[var(--radius-md)] hover:bg-[var(--tokens-secondary)] [font-family:var(--font-outfit)] text-[16px]"
-                      onClick={async () => {
-                        setIsConnectOpen(false);
-                        await connectWallet("Phantom");
-                      }}
-                    >
-                      Phantom
-                    </button>
-                  </div>
-                  <div className="w-full p-2">
-                    <button
-                      role="menuitem"
-                      className="block w-full text-left px-2 py-1.5 rounded-[var(--radius-md)] hover:bg-[var(--tokens-secondary)] [font-family:var(--font-outfit)] text-[16px]"
-                      onClick={async () => {
-                        setIsConnectOpen(false);
-                        await connectWallet("Backpack");
-                      }}
-                    >
-                      Backpack
-                    </button>
-                  </div>
-                  <div className="w-full p-2">
-                    <button
-                      role="menuitem"
-                      className="block w-full text-left px-2 py-1.5 rounded-[var(--radius-md)] hover:bg-[var(--tokens-secondary)] [font-family:var(--font-outfit)] text-[16px]"
-                      onClick={async () => {
-                        setIsConnectOpen(false);
-                        await connectWallet("Solflare");
-                      }}
-                    >
-                      Solflare
-                    </button>
-                  </div>
+                      <div className="w-full p-2">
+                        <button
+                          role="menuitem"
+                          className="block w-full text-left px-2 py-1.5 rounded-[var(--radius-md)] hover:bg-[var(--tokens-secondary)] [font-family:var(--font-outfit)] text-[16px]"
+                          onClick={async () => {
+                            setIsConnectOpen(false);
+                            await connectWallet("Phantom");
+                          }}
+                        >
+                          Phantom
+                        </button>
+                      </div>
+                      {!isMobile() && (
+                        <>
+                          <div className="w-full p-2">
+                            <button
+                              role="menuitem"
+                              className="block w-full text-left px-2 py-1.5 rounded-[var(--radius-md)] hover:bg-[var(--tokens-secondary)] [font-family:var(--font-outfit)] text-[16px]"
+                              onClick={async () => {
+                                setIsConnectOpen(false);
+                                await connectWallet("Backpack");
+                              }}
+                            >
+                              Backpack
+                            </button>
+                          </div>
+                          <div className="w-full p-2">
+                            <button
+                              role="menuitem"
+                              className="block w-full text-left px-2 py-1.5 rounded-[var(--radius-md)] hover:bg-[var(--tokens-secondary)] [font-family:var(--font-outfit)] text-[16px]"
+                              onClick={async () => {
+                                setIsConnectOpen(false);
+                                await connectWallet("Solflare");
+                              }}
+                            >
+                              Solflare
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </>
                   )}
                 </div>

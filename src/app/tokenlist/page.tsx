@@ -47,7 +47,7 @@ export default function TokenListPage() {
   };
 
   return (
-    <div className="h-full flex-grow mb-[120px]">
+    <div className="h-full flex-grow mb-[120px] w-full md:w-auto px-4 md:px-0 mt-[24px] md:mt-[32px]">
       <div className="relative z-[80]">
         <TokenListFilter />
       </div>

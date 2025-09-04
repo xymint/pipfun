@@ -8,6 +8,8 @@ import { useSocketStore } from "@/store/socketStore";
 import TokenProcessingOverlay from "@/components/shared/overlays/TokenProcessingOverlay";
 import { useTokenCreationFlowStore } from "@/store/tokenCreationFlowStore";
 import { useOverlayStore } from "@/store/overlayStore";
+import { cn } from "@/lib/utils";
+import { useToastStore } from "@/store/toastStore";
 
 type Draft = {
   id: string;
@@ -20,7 +22,11 @@ type Draft = {
   telegram?: string;
 };
 
-export default function CompletionOverlay({ tokenDraftId: tokenDraftIdProp }: { tokenDraftId?: string }) {
+export default function CompletionOverlay({
+  tokenDraftId: tokenDraftIdProp,
+}: {
+  tokenDraftId?: string;
+}) {
   const setDark = useOverlayStore((s) => s.setDark);
   const step = useTokenCreationFlowStore((s) => s.step);
   if (step !== "DRAFT_COMPLETED") return null;
@@ -31,7 +37,10 @@ export default function CompletionOverlay({ tokenDraftId: tokenDraftIdProp }: { 
 
   // query params: id (primary), draftId (fallback), status for badge
   const searchParams = useSearchParams();
-  const tokenDraftId = useMemo(() => tokenDraftIdProp || searchParams.get("id") || searchParams.get("draftId"), [tokenDraftIdProp, searchParams]);
+  const tokenDraftId = useMemo(
+    () => tokenDraftIdProp || searchParams.get("id") || searchParams.get("draftId"),
+    [tokenDraftIdProp, searchParams],
+  );
   const rawStatus = (searchParams.get("status") || "").toLowerCase();
   const badgeLabel = rawStatus === "failed" ? "Failed" : "Tokenized";
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -56,12 +65,13 @@ export default function CompletionOverlay({ tokenDraftId: tokenDraftIdProp }: { 
   const fetchDraft = async () => {
     if (!tokenDraftId) return;
     try {
-      const wa = walletAddress || (typeof window !== "undefined" ? localStorage.getItem("wallet_address") : null);
+      const wa =
+        walletAddress ||
+        (typeof window !== "undefined" ? localStorage.getItem("wallet_address") : null);
       if (!wa) return; // wait until wallet is available
-      const res = await fetchWithAuth(
-        TOKEN_ENDPOINTS.GET_TOKEN_DRAFT(tokenDraftId),
-        { headers: { "x-wallet-address": wa } }
-      );
+      const res = await fetchWithAuth(TOKEN_ENDPOINTS.GET_TOKEN_DRAFT(tokenDraftId), {
+        headers: { "x-wallet-address": wa },
+      });
       if (!res.ok) return;
       const data = await res.json();
       setDraft(data?.data ?? null);
@@ -142,23 +152,24 @@ export default function CompletionOverlay({ tokenDraftId: tokenDraftIdProp }: { 
         form,
         "PUT",
         true,
-        { "x-wallet-address": walletAddress }
+        { "x-wallet-address": walletAddress },
       );
       if (!updateRes.ok) {
         const err = await updateRes.json().catch(() => ({}));
-        alert(err?.error || "failed to update token draft");
+        try { useToastStore.getState().show(err?.error || "failed to update token draft", "error"); } catch {}
         setShowProcessing(false);
         return;
       }
 
       // 2) create token from draft
-      const createRes = await fetchWithAuth(
-        TOKEN_ENDPOINTS.CREATE_TOKEN_FROM_DRAFT(tokenDraftId),
-        { method: "POST", headers: { "x-wallet-address": walletAddress, "Content-Type": "application/json" }, body: JSON.stringify({ project: "pipfun" }) }
-      );
+      const createRes = await fetchWithAuth(TOKEN_ENDPOINTS.CREATE_TOKEN_FROM_DRAFT(tokenDraftId), {
+        method: "POST",
+        headers: { "x-wallet-address": walletAddress, "Content-Type": "application/json" },
+        body: JSON.stringify({ project: "pipfun" }),
+      });
       const createData = await createRes.json().catch(() => ({}));
       if (!createRes.ok || !createData?.success || !createData?.tokenId) {
-        alert(createData?.error || "failed to create token from draft");
+        try { useToastStore.getState().show(createData?.error || "failed to create token from draft", "error"); } catch {}
         setShowProcessing(false);
         return;
       }
@@ -169,7 +180,7 @@ export default function CompletionOverlay({ tokenDraftId: tokenDraftIdProp }: { 
       useTokenCreationFlowStore.getState().attachTokenId(tokenId);
       useTokenCreationFlowStore.getState().beginTokenProcessing();
     } catch (err) {
-      alert("unexpected error");
+      try { useToastStore.getState().show("unexpected error", "error"); } catch {}
       setShowProcessing(false);
     } finally {
       setIsSubmitting(false);
@@ -195,65 +206,104 @@ export default function CompletionOverlay({ tokenDraftId: tokenDraftIdProp }: { 
 
   return (
     <OverlayPortal>
-      <div key={overlayVersion} className="relative z-[80] flex items-center justify-center text-white mb-[120px]">
-        <div className="w-[640px] rounded-[var(--radius-xl)] bg-[var(--card)] border border-[var(--tokens-border)] px-8 py-8 shadow-[var(--card-shadow)]">
+      <div
+        key={overlayVersion}
+        className="relative z-[80] mb-[120px] flex items-center justify-center text-white"
+      >
+        <div
+          className={cn(
+            "w-[640px] max-w-full rounded-[var(--radius-xl)]",
+            "border border-[var(--tokens-border)] bg-[var(--card)]",
+            "px-5 py-6 md:px-8 md:py-8 shadow-[var(--card-shadow)]",
+          )}
+        >
           {/* header */}
-          <div className="mb-6 flex flex-col items-start gap-2">
-            <span className="inline-flex items-center rounded-full bg-emerald-600 text-white px-[10px] py-[2px] text-[12px] font-semibold">{badgeLabel}</span>
-            <span className="text-[14px] text-[var(--tokens-foreground)] w-full truncate">Source: {draft?.sourceUrl ?? "https://pip.fun"}</span>
+          <div className="mb-4 flex flex-col items-start gap-2">
+            <span className={cn(
+              "inline-flex items-center rounded-full bg-emerald-600",
+              "px-[10px] py-[2px] text-[12px] leading-[16px] tracking-[-0.1px]",
+              "font-semibold text-white"
+            )}>
+              {badgeLabel}
+            </span>
+            <span className="w-full truncate text-[14px] leading-[20px] text-[var(--tokens-foreground)]">
+              Source: {draft?.sourceUrl ?? "https://pip.fun"}
+            </span>
           </div>
           {/* form */}
-          <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4 text-left">
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-3 text-left pt-[32px]">
             {/* avatar / image uploader */}
-            <div className="col-span-2 flex items-center justify-center mb-2">
+            <div className="md:col-span-2 mb-2 flex items-center justify-center">
               <button
                 type="button"
-                className="w-30 h-30 rounded-full overflow-hidden bg-[var(--muted)] border border-2 border-[var(--tokens-border)] border-dashed"
+                className="h-30 w-30 overflow-hidden rounded-full border border-2 border-dashed border-[var(--tokens-border)] bg-[var(--muted)]"
                 onClick={() => fileInputRef.current?.click()}
                 aria-label="change image"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={imagePreview || "/processing-cooking.png"} alt="avatar" className="w-full h-full object-cover" />
+                <img
+                  src={imagePreview || "/processing-cooking.png"}
+                  alt="avatar"
+                  className="h-full w-full object-cover"
+                />
               </button>
-              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageSelect}
+              />
             </div>
 
             {/* name */}
             <div className="space-y-1.5">
-              <label className="block text-[14px] leading-[20px] font-medium text-[var(--tokens-foreground)]">Token name</label>
+              <label className="block text-[14px] leading-[20px] font-medium text-[var(--tokens-foreground)]">
+                Token name
+              </label>
               <input
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
-                className="px-4 py-[10px] rounded-[var(--radius-md)] bg-[var(--tokens-background)] border border-[var(--tokens-border)] text-[var(--tokens-foreground)] text-[16px] leading-[24px] w-full outline-none"
+                className="w-full rounded-[var(--radius-md)] border border-[var(--tokens-border)] bg-[var(--tokens-background)] px-4 py-[10px] text-[16px] leading-[24px] text-[var(--tokens-foreground)] outline-none"
                 placeholder="Token name"
               />
             </div>
 
             {/* ticker */}
             <div className="space-y-1.5">
-              <label className="block text-[14px] leading-[20px] font-medium text-[var(--tokens-foreground)]">Token ticker</label>
+              <label className="block text-[14px] leading-[20px] font-medium text-[var(--tokens-foreground)]">
+                Token ticker
+              </label>
               <input
                 value={formTicker}
                 onChange={(e) => setFormTicker(e.target.value)}
-                className="px-4 py-[10px] rounded-[var(--radius-md)] bg-[var(--tokens-background)] border border-[var(--tokens-border)] text-[var(--tokens-foreground)] text-[16px] leading-[24px] w-full outline-none"
+                className="w-full rounded-[var(--radius-md)] border border-[var(--tokens-border)] bg-[var(--tokens-background)] px-4 py-[10px] text-[16px] leading-[24px] text-[var(--tokens-foreground)] outline-none"
                 placeholder="Ticker"
               />
             </div>
 
             {/* description */}
-            <div className="col-span-2 space-y-1.5">
-              <label className="block text-[14px] leading-[20px] font-medium text=[var(--muted-foreground)]">Token description</label>
+            <div className="md:col-span-2 space-y-1.5">
+              <label className="text=[var(--muted-foreground)] block text-[14px] leading-[20px] font-medium">
+                Token description
+              </label>
               <textarea
                 value={formDescription}
                 onChange={(e) => setFormDescription(e.target.value)}
-                className="h-[80px] overflow-y-auto custom-scrollbar p-4 rounded-[var(--radius-md)] bg-[var(--tokens-background)] border border-[var(--tokens-border)] text-[var(--muted-foreground)] text-[14px] leading-[20px] w-full outline-none resize-none"
+                className="custom-scrollbar h-[80px] w-full resize-none overflow-y-auto rounded-[var(--radius-md)] border border-[var(--tokens-border)] bg-[var(--tokens-background)] p-4 text-[14px] leading-[20px] text-[var(--muted-foreground)] outline-none"
                 placeholder="Tell people about your token"
               />
             </div>
 
             {/* CTA */}
-            <div className="col-span-2 mt-4 mb-4">
-              <button type="submit" disabled={isSubmitting} className="cursor-pointer disabled:opacity-60 h-[54px] w-full rounded-[var(--radius-md)] bg-[var(--pip-primary)] text-[var(--pip-primary-foreground)] font-medium text-[16px] leading-[24px]">Create Token ( 0.3 SOL )</button>
+            <div className="md:col-span-2 mt-4 mb-4">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="h-[54px] w-full cursor-pointer rounded-[var(--radius-md)] bg-[var(--pip-primary)] text-[16px] leading-[24px] font-medium text-[var(--pip-primary-foreground)] disabled:opacity-60"
+              >
+                Create Token ( 0.3 SOL )
+              </button>
             </div>
 
             {/* socials */}
@@ -261,7 +311,7 @@ export default function CompletionOverlay({ tokenDraftId: tokenDraftIdProp }: { 
               <input
                 value={formTwitter}
                 onChange={(e) => setFormTwitter(e.target.value)}
-                className="px-4 py-[10px] rounded-[var(--radius-md)] bg-[var(--tokens-background)] border border-[var(--tokens-border)] text-[var(--tokens-foreground)] text-[16px] leading-[24px] placeholder:text-[var(--muted-foreground)] w-full outline-none"
+                className="w-full rounded-[var(--radius-md)] border border-[var(--tokens-border)] bg-[var(--tokens-background)] px-4 py-[10px] text-[16px] leading-[24px] text-[var(--tokens-foreground)] outline-none placeholder:text-[var(--muted-foreground)]"
                 placeholder="Twitter"
               />
             </div>
@@ -269,17 +319,21 @@ export default function CompletionOverlay({ tokenDraftId: tokenDraftIdProp }: { 
               <input
                 value={formTelegram}
                 onChange={(e) => setFormTelegram(e.target.value)}
-                className="px-4 py-[10px] rounded-[var(--radius-md)] bg-[var(--tokens-background)] border border-[var(--tokens-border)] text-[var(--tokens-foreground)] text-[16px] leading-[24px] placeholder:text-[var(--muted-foreground)] w-full outline-none"
+                className="w-full rounded-[var(--radius-md)] border border-[var(--tokens-border)] bg-[var(--tokens-background)] px-4 py-[10px] text-[16px] leading-[24px] text-[var(--tokens-foreground)] outline-none placeholder:text-[var(--muted-foreground)]"
                 placeholder="Telegram"
               />
             </div>
           </form>
           {/* footer list (static placeholders for now) */}
           <div className="mt-6 text-left text-[var(--muted-foreground)]">
-            <div className="mb-3 text-[14px] leading-[20px] font-semibold text-[var(--tokens-foreground)]">Additional Settings</div>
+            <div className="mb-3 text-[14px] leading-[20px] font-semibold text-[var(--tokens-foreground)]">
+              Additional Settings
+            </div>
             <div className="grid grid-cols-2 gap-y-3 text-[14px] leading-[20px]">
               <div className="text-[var(--tokens-secondary-foreground)]">Total Supply</div>
-              <div className="text-right text-[var(--tokens-popover-foreground)]">1,000,000,000</div>
+              <div className="text-right text-[var(--tokens-popover-foreground)]">
+                1,000,000,000
+              </div>
               <div className="text-[var(--tokens-secondary-foreground)]">Dynamic fee</div>
               <div className="text-right text-[var(--tokens-popover-foreground)]">Enabled</div>
               <div className="text-[var(--tokens-secondary-foreground)]">Creator Fee</div>

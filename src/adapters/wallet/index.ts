@@ -72,6 +72,21 @@ export function getWalletProvider(walletName?: string | null): WalletProvider | 
 
   switch (name) {
     case "phantom": {
+      // Mobile-friendly: if deeplink env is present, return mobile adapter
+      try {
+        const isMobile = (() => {
+          if (typeof window === "undefined") return false;
+          const ua = navigator.userAgent || navigator.vendor || (window as any).opera || "";
+          return /android|iphone|ipad|ipod|iemobile|blackberry|opera mini/i.test(ua);
+        })();
+
+        if (isMobile) {
+          // Lazy import to avoid bundling in desktop path
+          const { phantomMobileAdapter } = require("./phantomMobileAdapter");
+          return phantomMobileAdapter.provider();
+        }
+      } catch {}
+
       const p = (window as any)?.phantom?.solana as PhantomProvider | undefined;
       if (!p) {
         console.info("[wallet] phantom wallet not found");
