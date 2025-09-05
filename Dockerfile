@@ -3,16 +3,14 @@
 FROM node:20-bookworm-slim AS base
 WORKDIR /app
 ENV NODE_ENV=production \
-    NEXT_TELEMETRY_DISABLED=1
+    NEXT_TELEMETRY_DISABLED=1 \
+    NEXT_DISABLE_LIGHTNINGCSS=1
 RUN corepack enable && corepack prepare pnpm@9.12.2 --activate
 
 # Dependencies layer
 FROM base AS deps
 COPY pnpm-lock.yaml package.json ./
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl && rm -rf /var/lib/apt/lists/* \
- && update-ca-certificates \
- && --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
-    pnpm install --no-frozen-lockfile --prefer-offline --reporter=append-only
+RUN pnpm install --no-frozen-lockfile --prefer-offline --reporter=append-only
 
 # Builder layer
 FROM base AS builder
@@ -25,6 +23,7 @@ FROM node:20-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
+    NEXT_DISABLE_LIGHTNINGCSS=1 \
     PORT=8080
 RUN corepack enable && corepack prepare pnpm@9.12.2 --activate
 

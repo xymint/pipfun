@@ -6,7 +6,7 @@ export default function FeesPage() {
 
         <h3 className="text-white text-[16px] leading-[24px] font-semibold mb-2">1. Token Creation Fee</h3>
         <p className="text-[16px] leading-[24px] mb-2">
-          To launch a new token on pip.fun, a one-time fee of 0.03 SOL is required.
+          To launch a new token on pip.fun, a one-time fee of 0.038 SOL is required.
         </p>
         <p className="text-[16px] leading-[24px] mb-6">
           This fee covers the necessary on-chain account creation, contract deployment, and setup processes.
@@ -28,7 +28,7 @@ export default function FeesPage() {
 
         <h3 className="text-white text-[16px] leading-[24px] font-semibold mb-2">4. Summary of Fee Distribution</h3>
         <ul className="list-disc pl-5 text-[16px] leading-[24px] space-y-1 mb-6">
-          <li>Token creation fee: 0.03 SOL (one-time)</li>
+          <li>Token creation fee: 0.038 SOL (one-time)</li>
           <li>Trading fees: 1% per trade (70% to creators, 30% to platform &amp; ecosystem)</li>
         </ul>
 

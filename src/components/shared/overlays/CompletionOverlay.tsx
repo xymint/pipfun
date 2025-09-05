@@ -256,7 +256,7 @@ export default function CompletionOverlay({
                 disabled={isSubmitting}
                 className="h-[54px] w-full cursor-pointer rounded-[var(--radius-md)] bg-[var(--pip-primary)] text-[16px] leading-[24px] font-medium text-[var(--pip-primary-foreground)] disabled:opacity-60"
               >
-                Create Token ( 0.3 SOL )
+                Create Token ( 0.038 SOL )
               </button>
             </div>
 
