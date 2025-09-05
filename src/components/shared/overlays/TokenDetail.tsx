@@ -62,7 +62,7 @@ export default function TokenDetail({
         <div className="my-5 h-px bg-[var(--tokens-border)]" />
 
         {/* description */}
-        <p className="text-[14px] leading-[20px] text-[var(--muted-foreground)] text-center">{description}</p>
+        <p className="text-[14px] leading-[20px] text-[var(--muted-foreground)] text-center break-all">{description}</p>
 
         {/* socials */}
         <div className="mt-5 flex flex-wrap items-center justify-center gap-1">
