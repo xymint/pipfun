@@ -7,6 +7,12 @@ primary_region = "fra"
 [build]
 # Using the default Node builder. No Dockerfile needed for Next.js.
 
+[build.args]
+  NEXT_PUBLIC_API_URL = "https://api.xymint.xyz"
+  NEXT_PUBLIC_API_VERSION = "v1"
+  NEXT_PUBLIC_SITE_ORIGIN = "https://pip.fun"
+  NEXT_PUBLIC_WEBSOCKET_URL = "wss://api.xymint.xyz"
+
 [env]
   NODE_ENV = "production"
   PORT = "8080"                      # Next.js will bind to this

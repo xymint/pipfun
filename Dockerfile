@@ -17,6 +17,15 @@ FROM base AS builder
 ENV NODE_ENV=production
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# Build-time public envs (baked into client bundle)
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_API_VERSION
+ARG NEXT_PUBLIC_SITE_ORIGIN
+ARG NEXT_PUBLIC_WEBSOCKET_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} \
+    NEXT_PUBLIC_API_VERSION=${NEXT_PUBLIC_API_VERSION} \
+    NEXT_PUBLIC_SITE_ORIGIN=${NEXT_PUBLIC_SITE_ORIGIN} \
+    NEXT_PUBLIC_WEBSOCKET_URL=${NEXT_PUBLIC_WEBSOCKET_URL}
 RUN pnpm build
 
 # Runner layer (standalone output)
