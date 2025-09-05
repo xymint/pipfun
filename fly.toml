@@ -1,0 +1,42 @@
+# fly.toml app configuration file for pipfun (Next.js)
+# You can change `app` later with: fly apps rename <new-name>
+
+app = "pipfun"
+primary_region = "fra"
+
+[build]
+# Using the default Node builder. No Dockerfile needed for Next.js.
+
+[env]
+  NODE_ENV = "production"
+  PORT = "8080"                      # Next.js will bind to this
+  NEXT_TELEMETRY_DISABLED = "1"
+  NEXT_PUBLIC_API_URL = "https://api.xymint.xyz"
+  NEXT_PUBLIC_API_VERSION = "v1"
+  NEXT_PUBLIC_SITE_ORIGIN = "https://pip.fun"
+  NEXT_PUBLIC_WEBSOCKET_URL = "wss://api.xymint.xyz"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 300
+    hard_limit = 600
+
+  [[http_service.checks]]
+    grace_period = "30s"
+    interval = "30s"
+    method = "GET"
+    timeout = "10s"
+    path = "/health"
+
+[[vm]]
+  memory = "2gb"
+  cpu_kind = "shared"
+  cpus = 2
