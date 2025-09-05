@@ -72,7 +72,7 @@ export default function TokenDetailPage() {
           </div>
         ) : (
           <TokenDetail
-            imageUrl={data.imageUrl || "/token-avatar.png"}
+            imageUrl={data.imageUrl || "/no-tokens.png"}
             ticker={data.ticker || "TOKEN"}
             name={data.name || "-"}
             contractAddress={data.contractAddress || ""}

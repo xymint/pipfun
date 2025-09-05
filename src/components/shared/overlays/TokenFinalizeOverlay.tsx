@@ -22,7 +22,7 @@ export default function TokenFinalizeOverlay({ status, tokenId }: { status: "MIN
 
   const [name, setName] = useState<string>("CAT");
   const [ticker, setTicker] = useState<string>("CAT");
-  const [imageUrl, setImageUrl] = useState<string>("/token-avatar.png");
+  const [imageUrl, setImageUrl] = useState<string>("/no-tokens.png");
   const [description, setDescription] = useState<string>(
     "Dedicated to the ancient art of making random noises with your mouth, this cryptocurrency will make you LOL and possibly spit out your coffee."
   );

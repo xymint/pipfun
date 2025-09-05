@@ -53,11 +53,8 @@ export default function TokenProcessingOverlay({ tokenId, draftId, onBackToCompl
       if (!createPoolRes.ok) {
         const err = await createPoolRes.json().catch(() => ({}));
         try { useToastStore.getState().show(err?.error || "failed to get pool transactions", "error"); } catch {}
-        // mark failed and return to completion
-        try {
-          await fetchWithAuth(TOKEN_ENDPOINTS.FAILED_TOKEN_POOL(tokenId), { method: "POST", headers: { "x-wallet-address": signerAddress } });
-        } catch {}
-        onBackToCompletion?.();
+        try { useOverlayStore.getState().resetOverlays(); } catch {}
+        try { useTokenCreationFlowStore.getState().reset(); } catch {}
         return;
       }
 
@@ -65,10 +62,8 @@ export default function TokenProcessingOverlay({ tokenId, draftId, onBackToCompl
       const transactions: string[] = poolData?.transactions || [];
       if (!Array.isArray(transactions) || transactions.length === 0) {
         try { useToastStore.getState().show("no transactions received", "error"); } catch {}
-        try {
-          await fetchWithAuth(TOKEN_ENDPOINTS.FAILED_TOKEN_POOL(tokenId), { method: "POST", headers: { "x-wallet-address": signerAddress } });
-        } catch {}
-        onBackToCompletion?.();
+        try { useOverlayStore.getState().resetOverlays(); } catch {}
+        try { useTokenCreationFlowStore.getState().reset(); } catch {}
         return;
       }
 
@@ -109,13 +104,13 @@ export default function TokenProcessingOverlay({ tokenId, draftId, onBackToCompl
           console.error("[token-process] sign error", signErr);
           const msg = signErr?.message || "failed to sign or send transaction";
           try { useToastStore.getState().show(msg, "error"); } catch {}
-          try {
-            await fetchWithAuth(TOKEN_ENDPOINTS.FAILED_TOKEN_POOL(tokenId), { method: "POST", headers: { "x-wallet-address": signerAddress } });
-          } catch {}
-          onBackToCompletion?.();
+          try { useOverlayStore.getState().resetOverlays(); } catch {}
+          try { useTokenCreationFlowStore.getState().reset(); } catch {}
           return;
         }
       }
+
+      useToastStore.getState().show("Transaction sent, waiting for finalization...", "success");
 
       // 2) finalize with first signature
       const finalizeRes = await fetchWithAuth(
@@ -132,10 +127,8 @@ export default function TokenProcessingOverlay({ tokenId, draftId, onBackToCompl
       if (!finalizeRes.ok) {
         const err = await finalizeRes.json().catch(() => ({}));
         try { useToastStore.getState().show(err?.error || "failed to finalize token pool", "error"); } catch {}
-        try {
-          await fetchWithAuth(TOKEN_ENDPOINTS.FAILED_TOKEN_POOL(tokenId), { method: "POST", headers: { "x-wallet-address": signerAddress } });
-        } catch {}
-        onBackToCompletion?.();
+        try { useOverlayStore.getState().resetOverlays(); } catch {}
+        try { useTokenCreationFlowStore.getState().reset(); } catch {}
         return;
       }
 
@@ -162,18 +155,16 @@ export default function TokenProcessingOverlay({ tokenId, draftId, onBackToCompl
       const ok = await useSocketStore.getState().joinTokenRoom(tokenId);
       if (!ok) {
         try { useToastStore.getState().show("failed to join token room", "error"); } catch {}
-        onBackToCompletion?.();
+        try { useOverlayStore.getState().resetOverlays(); } catch {}
+        try { useTokenCreationFlowStore.getState().reset(); } catch {}
         return;
       }
       useSocketStore.getState().addTokenStatusListener(tokenId, onStatus);
     } catch (e) {
       console.error("[token-process] error", e);
       try { useToastStore.getState().show(e instanceof Error ? e.message : "unexpected error during pool creation", "error"); } catch {}
-      try {
-        const { walletAddress: latestAddress } = useWalletStore.getState();
-        await fetchWithAuth(TOKEN_ENDPOINTS.FAILED_TOKEN_POOL(tokenId), { method: "POST", headers: { "x-wallet-address": (latestAddress || walletAddress)! } });
-      } catch {}
-      onBackToCompletion?.();
+      try { useOverlayStore.getState().resetOverlays(); } catch {}
+      try { useTokenCreationFlowStore.getState().reset(); } catch {}
     }
   }, [tokenId, walletAddress, provider, onBackToCompletion]);
 

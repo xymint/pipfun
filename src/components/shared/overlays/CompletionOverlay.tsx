@@ -5,7 +5,7 @@ import { fetchWithAuth, fetchFormDataWithAuth } from "@/utils/api.util";
 import { TOKEN_ENDPOINTS } from "@/constants/apiEndpoints";
 import { useWalletStore } from "@/store/walletStore";
 import { useSocketStore } from "@/store/socketStore";
-import TokenProcessingOverlay from "@/components/shared/overlays/TokenProcessingOverlay";
+// TokenProcessingOverlay is rendered by Home via flowStep; this component should not render it directly
 import { useTokenCreationFlowStore } from "@/store/tokenCreationFlowStore";
 import { useOverlayStore } from "@/store/overlayStore";
 import { cn } from "@/lib/utils";
@@ -56,9 +56,7 @@ export default function CompletionOverlay({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showProcessing, setShowProcessing] = useState(false);
-  // removed local token finalize states; handled in TokenProcessingOverlay
-  const [tokenPhase, setTokenPhase] = useState<{ tokenId: string } | null>(null);
+  // processing overlay is controlled by flow in Home; keep only local form states here
   const flow = useTokenCreationFlowStore.getState();
 
   // draft fetch function reused in multiple places
@@ -82,35 +80,7 @@ export default function CompletionOverlay({
     fetchDraft();
   }, [tokenDraftId, walletAddress]);
 
-  // when tokenDraft status updates to TOKENIZED after overlay opens, refetch
-  useEffect(() => {
-    let active = true;
-    const setup = async () => {
-      if (!tokenDraftId) return;
-      const ok = await useSocketStore.getState().joinTokenDraftRoom(tokenDraftId);
-      if (!ok) return;
-      const onDraftStatus = (evt: { tokenDraftId: string; status: string }) => {
-        if (!active) return;
-        if (evt.tokenDraftId !== tokenDraftId) return;
-        if (evt.status === "TOKENIZED" || evt.status === "EXTRACTED" || evt.status === "APPROVED") {
-          fetchDraft();
-        }
-      };
-      useSocketStore.getState().addTokenDraftStatusListener(tokenDraftId, onDraftStatus);
-      return () => {
-        useSocketStore.getState().removeTokenDraftStatusListener(tokenDraftId, onDraftStatus);
-        useSocketStore.getState().leaveTokenRoom?.(tokenDraftId); // safe-guard if exists
-      };
-    };
-    let cleanup: (() => void) | undefined;
-    setup().then((c) => {
-      cleanup = c as unknown as (() => void) | undefined;
-    });
-    return () => {
-      active = false;
-      if (cleanup) cleanup();
-    };
-  }, [tokenDraftId]);
+  // removed websocket draft status subscription for simplicity; rely on explicit fetch after transitions
 
   useEffect(() => {
     if (!draft) return;
@@ -135,8 +105,8 @@ export default function CompletionOverlay({
     if (!tokenDraftId || !walletAddress) return;
     try {
       setIsSubmitting(true);
-      // show draft processing overlay while updating and creating token from draft
-      setShowProcessing(true);
+      // Immediately switch flow to TOKEN_PROCESSING so the processing overlay mounts
+      useTokenCreationFlowStore.getState().beginTokenProcessing();
 
       // 1) update draft (FormData)
       const form = new FormData();
@@ -157,7 +127,8 @@ export default function CompletionOverlay({
       if (!updateRes.ok) {
         const err = await updateRes.json().catch(() => ({}));
         try { useToastStore.getState().show(err?.error || "failed to update token draft", "error"); } catch {}
-        setShowProcessing(false);
+        try { useOverlayStore.getState().resetOverlays(); } catch {}
+        try { useTokenCreationFlowStore.getState().reset(); } catch {}
         return;
       }
 
@@ -170,39 +141,22 @@ export default function CompletionOverlay({
       const createData = await createRes.json().catch(() => ({}));
       if (!createRes.ok || !createData?.success || !createData?.tokenId) {
         try { useToastStore.getState().show(createData?.error || "failed to create token from draft", "error"); } catch {}
-        setShowProcessing(false);
+        try { useOverlayStore.getState().resetOverlays(); } catch {}
+        try { useTokenCreationFlowStore.getState().reset(); } catch {}
         return;
       }
 
       const tokenId = createData.tokenId as string;
-      // Move to token processing phase (unmount completion UI)
-      setTokenPhase({ tokenId });
+      // Provide tokenId to the processing overlay which is already mounted
       useTokenCreationFlowStore.getState().attachTokenId(tokenId);
-      useTokenCreationFlowStore.getState().beginTokenProcessing();
     } catch (err) {
       try { useToastStore.getState().show("unexpected error", "error"); } catch {}
-      setShowProcessing(false);
+      try { useOverlayStore.getState().resetOverlays(); } catch {}
+      try { useTokenCreationFlowStore.getState().reset(); } catch {}
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  // Single token processing overlay to avoid remount (video flicker):
-  // - When submitting (showProcessing), mount once with undefined tokenId (display creating visuals only)
-  // - When tokenId arrives (tokenPhase), same instance receives tokenId via props and begins processing
-  const tokenProcessingActive = showProcessing || !!tokenPhase;
-  if (tokenProcessingActive) {
-    return (
-      <TokenProcessingOverlay
-        tokenId={tokenPhase?.tokenId}
-        draftId={tokenDraftId || undefined}
-        onBackToCompletion={() => {
-          setShowProcessing(false);
-          setTokenPhase(null);
-        }}
-      />
-    );
-  }
 
   return (
     <OverlayPortal>

@@ -19,6 +19,7 @@ export default function TokenCreationCard() {
   const tokenDraftIdRef = useRef<string | null>(null);
   const walletAddress = useWalletStore((s) => s.walletAddress);
   const resetOverlays = useOverlayStore((s) => s.resetOverlays);
+  const resetFlow = useTokenCreationFlowStore((s) => s.reset);
 
   const handlePaste = useCallback(async () => {
     try {
@@ -56,20 +57,23 @@ export default function TokenCreationCard() {
           if (response.status === 429) {
             useToastStore.getState().show(data?.error || "Rate limit exceeded. Please try again later.", "warn");
           } else if (response.status === 500) {
-            // show inline hint only for 500 as requested
             setShowInvalidHint(true);
             useTokenCreationFlowStore.getState().showErrorHint("Enter a valid URL");
-            // reset overlays (background) and move flow to IDLE-with-hint
-            resetOverlays();
           } else {
-            useToastStore.getState().show(data?.error || "Failed to analyze URL", "error");
+            // useToastStore.getState().show(data?.error || "Failed to analyze URL", "error");
+            setShowInvalidHint(true);
+            useTokenCreationFlowStore.getState().showErrorHint("Failed to analyze URL");
           }
+          resetOverlays();
+          resetFlow();
           return;
         }
 
         const draftId = data?.data?.id as string | undefined;
         if (!draftId) {
           useToastStore.getState().show("Invalid server response", "error");
+          resetOverlays();
+          resetFlow();
           return;
         }
 
@@ -77,44 +81,17 @@ export default function TokenCreationCard() {
         useTokenCreationFlowStore.getState().attachDraftId(draftId);
         useTokenCreationFlowStore.setState({ statusText: "waiting for tokenizer" });
 
-        // join websocket room and listen for status
-        const socket = useSocketStore.getState();
-        const ok = await socket.joinTokenDraftRoom(draftId);
-        if (!ok) {
-          // still show processing, backend may still proceed
-        } else {
-          const onStatus = (evt: { tokenDraftId: string; status: string }) => {
-            if (evt.tokenDraftId !== draftId) return;
-            if (evt.status === "TOKENIZED" || evt.status === "FAILED") {
-              useTokenCreationFlowStore.getState().showDraftCompleted(draftId);
-              useSocketStore.getState().removeTokenDraftStatusListener(draftId, onStatus);
-              useSocketStore.getState().leaveTokenDraftRoom(draftId);
-            }
-          };
-          useSocketStore.getState().addTokenDraftStatusListener(draftId, onStatus);
-        }
+        // do not connect socket here; DraftProcessingOverlay will manage websocket lifecycle
       } catch (err) {
         useToastStore.getState().show("Unexpected error occurred", "error");
+        resetOverlays();
+        resetFlow();
       } finally {
         setIsSubmitting(false);
       }
     },
     [urlInput, walletAddress],
   );
-
-  useEffect(() => {
-    return () => {
-      const draftId = tokenDraftIdRef.current;
-      if (draftId) {
-        // cleanup listeners/room
-        const s = useSocketStore.getState();
-        // we can't remove a specific handler reference here; rooms will be left
-        s.leaveTokenDraftRoom(draftId);
-      }
-    };
-  }, []);
-
-  // no-op
 
   return (
     <div
