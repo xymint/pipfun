@@ -28,8 +28,31 @@ const bagel = Bagel_Fat_One({
 });
 
 export const metadata: Metadata = {
-  title: "pip.fun",
-  description: "pip.fun",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_ORIGIN || "https://pip.fun"),
+  title: "PIP.FUN",
+  description: "CREATOR-FIRST & HOLDER-FOCUSED TOKEN LABS",
+  openGraph: {
+    title: "PIP.FUN",
+    description: "CREATOR-FIRST & HOLDER-FOCUSED TOKEN LABS",
+    url: "/",
+    siteName: "PIP.FUN",
+    images: [
+      {
+        url: "/pipfun-og.png",
+        width: 1200,
+        height: 630,
+        alt: "PIP.FUN",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "PIP.FUN",
+    description: "CREATOR-FIRST & HOLDER-FOCUSED TOKEN LABS",
+    images: ["/pipfun-og.png"],
+  },
 };
 
 export default function RootLayout({
