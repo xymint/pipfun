@@ -1,15 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useOverlayStore } from "@/store/overlayStore";
 import TokenListFilter from "@/components/tokens/TokenListFilter";
 import TokenListGrid from "@/components/tokens/TokenListGrid";
 import TokenListPagination from "@/components/tokens/TokenListPagination";
 import { fetchPublic } from "@/utils/api.util";
 import { TOKEN_ENDPOINTS } from "@/constants/apiEndpoints";
 
-export default function TokenListPage() {
+function TokenListInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const page = useMemo(() => parseInt(searchParams.get("page") || "1", 10) || 1, [searchParams]);
@@ -25,7 +24,7 @@ export default function TokenListPage() {
         setTokens(null);
         if (debugSkeleton) {
           setTotalPages(1);
-          return; // skip fetching to keep skeleton
+          return;
         }
         const qs = new URLSearchParams({ page: String(page), limit: "24", filter, project: "pipfun" }).toString();
         const res = await fetchPublic(`${TOKEN_ENDPOINTS.GET_TOKEN_LIST}?${qs}`);
@@ -58,5 +57,13 @@ export default function TokenListPage() {
         <TokenListPagination currentPage={page} totalPages={totalPages} onPageChange={handlePageChange} />
       </div>
     </div>
+  );
+}
+
+export default function TokenListPage() {
+  return (
+    <Suspense fallback={null}>
+      <TokenListInner />
+    </Suspense>
   );
 }

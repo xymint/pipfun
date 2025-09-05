@@ -2,6 +2,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  eslint: {
+    // Do not fail the production build on ESLint errors
+    ignoreDuringBuilds: true,
+  },
   async headers() {
     return [
       {

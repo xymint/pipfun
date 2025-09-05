@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Geist_Mono, Outfit, Bagel_Fat_One } from "next/font/google";
 import "./globals.css";
 import Background from "@/components/shared/Background";
@@ -45,8 +46,10 @@ export default function RootLayout({
       <body
         className={`${outfit.className} ${outfit.variable} ${bagel.variable} ${geistMono.variable} antialiased min-h-dvh flex flex-col`}
       >
-        {/** debug toasts via URL params */}
-        <ToastDebugInit />
+        {/** debug toasts via URL params (must be wrapped in Suspense when using useSearchParams) */}
+        <Suspense fallback={null}>
+          <ToastDebugInit />
+        </Suspense>
         <WalletInitializer />
         <Background mobileXPercent={70} />
         <BackgroundOverlayHost />
@@ -55,7 +58,9 @@ export default function RootLayout({
         </div>
         <main id="main-scroll" className="flex-1 flex flex-col items-center justify-center relative overflow-auto">
           <div id="main-overlay-root" className="pointer-events-auto z-[120] max-w-full px-4 md:px-0" />
-          {children}
+          <Suspense fallback={null}>
+            {children}
+          </Suspense>
         </main>
         <ToastHost />
         <div className="hidden md:block relative z-[90]">
