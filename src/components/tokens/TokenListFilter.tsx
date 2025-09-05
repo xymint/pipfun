@@ -8,9 +8,10 @@ export default function TokenListFilter() {
   const filter = (params.get("filter") as "latest" | "top-market-cap") || "latest";
 
   const setFilter = (next: "latest" | "top-market-cap") => {
-    const page = params.get("page") || "1";
-    const q = new URLSearchParams({ page, filter: next }).toString();
-    router.replace(`/tokenlist?${q}`);
+    const q = new URLSearchParams(params);
+    q.set("filter", next);
+    q.delete("page");
+    router.replace(`/tokenlist?${q.toString()}`);
   };
 
   return (
