@@ -2,6 +2,8 @@
   "name": "pipfun",
   "version": "0.1.0",
   "private": true,
+  "engines": { "node": ">=20 <21" },
+  "packageManager": "pnpm@9.12.2",
   "scripts": {
     "dev": "next dev -p 3333 --turbopack",
     "build": "next build",
