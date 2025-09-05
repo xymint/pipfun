@@ -8,13 +8,13 @@ RUN corepack enable && corepack prepare pnpm@9.12.2 --activate
 
 # Dependencies layer (install devDependencies for build)
 FROM base AS deps
-ENV NODE_ENV=development
+ENV NODE_ENV=production
 COPY pnpm-lock.yaml package.json ./
-RUN pnpm install --no-frozen-lockfile --prefer-offline --reporter=append-only
+RUN pnpm install --no-frozen-lockfile --prod=false --prefer-offline --reporter=append-only
 
 # Builder layer
 FROM base AS builder
-ENV NODE_ENV=development
+ENV NODE_ENV=production
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN pnpm build
