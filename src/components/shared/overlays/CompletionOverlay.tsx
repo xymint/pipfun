@@ -95,6 +95,24 @@ export default function CompletionOverlay({
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    // validate file type and size (server allows JPG/PNG/WebP/GIF up to 5MB)
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+    ];
+    if (!allowedTypes.includes(file.type)) {
+      try { useToastStore.getState().show("Unsupported image format. Use JPG/PNG/WebP/GIF", "error"); } catch {}
+      e.currentTarget.value = "";
+      return;
+    }
+    const maxBytes = 5 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      try { useToastStore.getState().show("Image must be <= 5MB", "error"); } catch {}
+      e.currentTarget.value = "";
+      return;
+    }
     setImageFile(file);
     const url = URL.createObjectURL(file);
     setImagePreview(url);
@@ -127,6 +145,17 @@ export default function CompletionOverlay({
       if (!updateRes.ok) {
         const err = await updateRes.json().catch(() => ({}));
         try { useToastStore.getState().show(err?.error || "failed to update token draft", "error"); } catch {}
+        try { useOverlayStore.getState().resetOverlays(); } catch {}
+        try { useTokenCreationFlowStore.getState().reset(); } catch {}
+        return;
+      }
+      // validate updated imageUrl before creating token
+      const updateJson = await updateRes.json().catch(() => ({} as any));
+      const updatedDraft: Draft | null = updateJson?.data ?? null;
+      const finalImageUrl = updatedDraft?.imageUrl ?? draft?.imageUrl ?? "";
+      const isHttpUrl = (u: string) => /^https?:\/\//i.test(u);
+      if (!finalImageUrl || !isHttpUrl(finalImageUrl)) {
+        try { useToastStore.getState().show("Invalid image URL after update. Please use JPG/PNG/WebP/GIF <=5MB.", "error"); } catch {}
         try { useOverlayStore.getState().resetOverlays(); } catch {}
         try { useTokenCreationFlowStore.getState().reset(); } catch {}
         return;
@@ -204,7 +233,7 @@ export default function CompletionOverlay({
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp,image/gif"
                 className="hidden"
                 onChange={handleImageSelect}
               />

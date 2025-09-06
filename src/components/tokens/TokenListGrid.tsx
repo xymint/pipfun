@@ -18,7 +18,7 @@ export default function TokenListGrid({ tokens }: { tokens: Token[] | null }) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 justify-center">
         {sk.map((i) => (
           <div key={i} className="w-full md:w-[300px] rounded-[var(--radius-lg)] border border-[var(--tokens-border)] bg-[var(--card)] p-3 flex gap-3">
-            <div className="w-[120px] h-[120px] rounded-[var(--radius-md)] overflow-hidden bg-[var(--tokens-secondary)] animate-pulse" />
+            <div className="flex-none min-w-[120px] w-[120px] h-[120px] rounded-[var(--radius-md)] overflow-hidden bg-[var(--tokens-secondary)] animate-pulse" />
             <div className="flex flex-col flex-grow">
               <div className="h-[28px] rounded-[var(--radius-md)] bg-[var(--tokens-secondary)] animate-pulse" />
               <div className="mt-2 h-[16px] w-[75%] rounded-[var(--radius-md)] bg-[var(--tokens-secondary)] animate-pulse" />
@@ -45,13 +45,13 @@ export default function TokenListGrid({ tokens }: { tokens: Token[] | null }) {
         const cpWidth = `${Math.max(0, Math.min(100, cp))}%`;
         return (
           <Link key={t.id} href={`/tokens/${t.id}`} className="w-full md:w-[300px] rounded-[var(--radius-lg)] border border-[var(--tokens-border)] bg-[var(--card)] p-3 min-w-0 flex gap-3 transition-colors">
-            <div className="w-[120px] h-[120px] rounded-[var(--radius-md)] overflow-hidden bg-[var(--tokens-secondary)]">
+            <div className="flex-none min-w-[120px] w-[120px] h-[120px] rounded-[var(--radius-md)] overflow-hidden bg-[var(--tokens-secondary)]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={t.imageUrl || "/token-holder.png"} alt={t.ticker || t.name || "token"} className="w-full h-full object-cover" />
             </div>
-            <div className="flex-grow flex flex-col">
+            <div className="flex-grow flex flex-col min-w-0">
               <div className="text-[var(--pip-primary)] text-[18px] leading-[22px] font-semibold">{t.ticker || "TOKEN"}</div>
-              <div className="text-[var(--tokens-secondary-foreground)] text-[14px] leading-[20px]">{t.name || "-"}</div>
+              <div className="text-[var(--tokens-secondary-foreground)] text-[14px] leading-[20px] [overflow-wrap:anywhere]">{t.name || "-"}</div>
               <div className="mt-2">
                 <CopyText text={t.contractAddress || ""} className="text-[var(--muted-foreground)] text-[12px] leading-[16px]" />
               </div>

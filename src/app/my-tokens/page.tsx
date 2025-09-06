@@ -11,6 +11,7 @@ import { TOKEN_ENDPOINTS as ENDPOINTS } from "@/constants/apiEndpoints";
 import Link from "next/link";
 import CopyText from "@/utils/CopyText";
 import { cn } from "@/lib/utils";
+import { formatAmount } from "@/utils/number.util";
 
 type MyToken = {
   id: string;
@@ -31,6 +32,7 @@ export default function MyTokensPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const showToast = useToastStore((s) => s.show);
+  const [claiming, setClaiming] = useState<Record<string, boolean>>({});
 
   // Background overlay defaults to DARK via BackgroundOverlayHost route mapping.
 
@@ -73,12 +75,32 @@ export default function MyTokensPage() {
       deeplink.action === "signAndSendTransaction" &&
       (deeplink.data.context || "").startsWith("claimFee:")
     ) {
-      showToast("creator trading fee claimed successfully", "success");
-      try {
-        clearDeeplink();
-      } catch {}
-      // Optionally refresh list; keep lightweight
-      // setPage((p) => p);
+      const tokenId = String((deeplink.data.context as string).split(":")[1] || "");
+      (async () => {
+        try {
+          const wa =
+            walletAddress ||
+            (typeof window !== "undefined" ? localStorage.getItem("wallet_address") : null);
+          await fetchWithAuth(ENDPOINTS.POST_CLAIM_CREATOR_DBC_FEE_COMPLETE(tokenId), {
+            method: "POST",
+            headers: { "x-wallet-address": wa || "" },
+            body: JSON.stringify({ signature: (deeplink as any)?.data?.signature }),
+          });
+          showToast("creator trading fee claimed successfully", "success");
+          setTokens((prev) =>
+            Array.isArray(prev)
+              ? prev.map((tk) => (tk.id === tokenId ? { ...tk, creatorSolFee: 0 } : tk))
+              : prev,
+          );
+        } catch (e) {
+          // noop: backend returns success even if no signature
+        } finally {
+          setClaiming((c) => ({ ...c, [tokenId]: false }));
+          try {
+            clearDeeplink();
+          } catch {}
+        }
+      })();
     }
   }, [deeplink, clearDeeplink, showToast]);
 
@@ -171,7 +193,7 @@ export default function MyTokensPage() {
                           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-1 md:gap-0 text-[12px] leading-[16px] text-[var(--muted-foreground)]">
                             <div>Unclaimed Fee</div>
                             <div className="font-semibold text-[var(--pip-primary)]">
-                              {t.creatorSolFee} SOL
+                              {formatAmount(t.creatorSolFee, 9)} SOL
                             </div>
                           </div>
                         </div>
@@ -188,6 +210,7 @@ export default function MyTokensPage() {
                                 return;
                               }
                               try {
+                                setClaiming((c) => ({ ...c, [t.id]: true }));
                                 const res = await fetchWithAuth(
                                   ENDPOINTS.POST_CLAIM_CREATOR_DBC_FEE(t.id),
                                   {
@@ -211,29 +234,61 @@ export default function MyTokensPage() {
                                 if (!provider) throw new Error("wallet provider not found");
                                 // Pass context for mobile deeplink to resume safely
                                 const context = `claimFee:${t.id}`;
+                                let signature: string | undefined;
                                 try {
-                                  await provider.signAndSendTransaction(tx, context);
+                                  const resp = await provider.signAndSendTransaction(tx, context);
+                                  signature =
+                                    typeof resp === "string"
+                                      ? resp
+                                      : (resp?.signature as string | undefined);
                                 } catch (e1: any) {
                                   // Some providers may not accept extra context param
                                   if (
                                     e1?.message?.includes("Missing or invalid parameters") ||
                                     e1?.code === -32602
                                   ) {
-                                    await provider.signAndSendTransaction(tx);
+                                    const resp = await provider.signAndSendTransaction(tx);
+                                    signature =
+                                      typeof resp === "string"
+                                        ? resp
+                                        : (resp?.signature as string | undefined);
                                   } else {
                                     throw e1;
                                   }
                                 }
+                                try {
+                                  await fetchWithAuth(
+                                    ENDPOINTS.POST_CLAIM_CREATOR_DBC_FEE_COMPLETE(t.id),
+                                    {
+                                      method: "POST",
+                                      headers: { "x-wallet-address": walletAddress },
+                                      body: JSON.stringify({ signature }),
+                                    },
+                                  );
+                                } catch {}
                                 showToast("creator trading fee claimed successfully", "success");
+                                setTokens((prev) =>
+                                  Array.isArray(prev)
+                                    ? prev.map((tk) =>
+                                        tk.id === t.id ? { ...tk, creatorSolFee: 0 } : tk,
+                                      )
+                                    : prev,
+                                );
                               } catch (e: any) {
                                 console.error(e);
                                 showToast(
                                   e?.message || "failed to claim creator trading fee",
                                   "error",
                                 );
+                              } finally {
+                                setClaiming((c) => ({ ...c, [t.id]: false }));
                               }
                             }}
-                            className="h-[36px] min-w-[96px] cursor-pointer rounded-[var(--radius-md)] bg-[var(--pip-primary)] px-4 text-[14px] leading-[20px] font-medium text-[var(--pip-primary-foreground)]"
+                            disabled={Boolean(claiming[t.id])}
+                            className={cn(
+                              "h-[36px] min-w-[96px] cursor-pointer rounded-[var(--radius-md)] bg-[var(--pip-primary)] px-4 text-[14px] leading-[20px] font-medium text-[var(--pip-primary-foreground)]",
+                              claiming[t.id] ? "opacity-50 pointer-events-none" : "",
+                            )}
                           >
                             Claim fee
                           </button>

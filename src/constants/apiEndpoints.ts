@@ -22,6 +22,7 @@ export const TOKEN_ENDPOINTS = {
   GET_TOKEN_LIST: `tokens/list`,
   GET_MY_TOKENS: `tokens/my`,
   POST_CLAIM_CREATOR_DBC_FEE: (id: string) => `tokens/${id}/claim-creator-dbc-fee`,
+  POST_CLAIM_CREATOR_DBC_FEE_COMPLETE: (id: string) => `tokens/${id}/claim-creator-dbc-fee/complete`,
   // optionally available endpoints (unreferenced by current flow)
   // RETRY_FINALIZE_TOKEN_POOL: (id: string) => `tokens/${id}/pool/finalize/retry`,
   // GET_TOKEN_POOL: (id: string) => `tokens/${id}/pool`,
