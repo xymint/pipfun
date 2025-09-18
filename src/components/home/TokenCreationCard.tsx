@@ -46,6 +46,7 @@ export default function TokenCreationCard() {
       });
 
       try {
+        console.log(`[Draft] Creating draft for URL: ${urlInput.trim()}`);
         const response = await fetchWithAuth(TOKEN_ENDPOINTS.CREATE_TOKEN_DRAFT, {
           method: "POST",
           headers: { "Content-Type": "application/json", "x-wallet-address": walletAddress },
@@ -53,6 +54,8 @@ export default function TokenCreationCard() {
         });
 
         const data = await response.json().catch(() => ({}));
+        console.log(`[Draft] Create response: ${response.status}`, data);
+
         if (!response.ok) {
           if (response.status === 429) {
             useToastStore.getState().show(data?.error || "Rate limit exceeded. Please try again later.", "warn");
@@ -71,18 +74,21 @@ export default function TokenCreationCard() {
 
         const draftId = data?.data?.id as string | undefined;
         if (!draftId) {
+          console.error(`[Draft] No draft ID in response:`, data);
           useToastStore.getState().show("Invalid server response", "error");
           resetOverlays();
           resetFlow();
           return;
         }
 
+        console.log(`[Draft] Draft created successfully: ${draftId}`);
         tokenDraftIdRef.current = draftId;
         useTokenCreationFlowStore.getState().attachDraftId(draftId);
         useTokenCreationFlowStore.setState({ statusText: "waiting for tokenizer" });
 
         // do not connect socket here; DraftProcessingOverlay will manage websocket lifecycle
       } catch (err) {
+        console.error(`[Draft] Unexpected error:`, err);
         useToastStore.getState().show("Unexpected error occurred", "error");
         resetOverlays();
         resetFlow();
