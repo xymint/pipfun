@@ -11,7 +11,7 @@ import { VersionedTransaction } from "@solana/web3.js";
 import { useTokenCreationFlowStore } from "@/store/tokenCreationFlowStore";
 import { useOverlayStore } from "@/store/overlayStore";
 import { useToastStore } from "@/store/toastStore";
-import crypto from "crypto";
+
 
 
 export default function TokenProcessingOverlay({ tokenId, draftId, onBackToCompletion }: { tokenId?: string; draftId?: string; onBackToCompletion?: () => void }) {
@@ -76,33 +76,9 @@ export default function TokenProcessingOverlay({ tokenId, draftId, onBackToCompl
       const bytes = Buffer.from(txB64, "base64");
       const tx = VersionedTransaction.deserialize(new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength));
 
-      // Preserve original message before signing
-      const originalMessage = tx.message.serialize();
-      const originalSha = crypto.createHash('sha256').update(originalMessage).digest('hex');
-      console.log(`[Pool] Original message SHA: ${originalSha}`);
-
+      // 3) sign locally with wallet and submit as-is (server handles canonicalization/merge)
       const signedTx = (await signer.signTransaction(tx)) || tx;
-
-      // Check if message changed after signing
-      const signedMessage = signedTx.message.serialize();
-      const signedSha = crypto.createHash('sha256').update(signedMessage).digest('hex');
-      console.log(`[Pool] Signed message SHA: ${signedSha}, same: ${originalSha === signedSha}`);
-
-      // 3) submit signed transaction to server
-      let finalTx = signedTx;
-
-      // If wallet changed the message, reconstruct with original message
-      if (originalSha !== signedSha) {
-        console.log(`[Pool] Message changed by wallet, reconstructing with original message`);
-        finalTx = new VersionedTransaction(tx.message, signedTx.signatures);
-        const finalMessage = finalTx.message.serialize();
-        const finalSha = crypto.createHash('sha256').update(finalMessage).digest('hex');
-        console.log(`[Pool] Reconstructed message SHA: ${finalSha}, matches original: ${originalSha === finalSha}`);
-      } else {
-        console.log(`[Pool] Message unchanged, using signed transaction as-is`);
-      }
-
-      const signedB64 = Buffer.from(finalTx.serialize()).toString("base64");
+      const signedB64 = Buffer.from(signedTx.serialize()).toString("base64");
       const submitRes = await fetchWithAuth(
         TOKEN_ENDPOINTS.SUBMIT_TOKEN_POOL_SINGLE_SIGN(tokenId),
         {
