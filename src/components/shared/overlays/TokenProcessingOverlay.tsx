@@ -89,11 +89,18 @@ export default function TokenProcessingOverlay({ tokenId, draftId, onBackToCompl
       console.log(`[Pool] Signed message SHA: ${signedSha}, same: ${originalSha === signedSha}`);
 
       // 3) submit signed transaction to server
-      // Create new transaction with original message + signatures to avoid message changes
-      const finalTx = new VersionedTransaction(tx.message, signedTx.signatures);
-      const finalMessage = finalTx.message.serialize();
-      const finalSha = crypto.createHash('sha256').update(finalMessage).digest('hex');
-      console.log(`[Pool] Final message SHA: ${finalSha}, same as original: ${originalSha === finalSha}`);
+      let finalTx = signedTx;
+
+      // If wallet changed the message, reconstruct with original message
+      if (originalSha !== signedSha) {
+        console.log(`[Pool] Message changed by wallet, reconstructing with original message`);
+        finalTx = new VersionedTransaction(tx.message, signedTx.signatures);
+        const finalMessage = finalTx.message.serialize();
+        const finalSha = crypto.createHash('sha256').update(finalMessage).digest('hex');
+        console.log(`[Pool] Reconstructed message SHA: ${finalSha}, matches original: ${originalSha === finalSha}`);
+      } else {
+        console.log(`[Pool] Message unchanged, using signed transaction as-is`);
+      }
 
       const signedB64 = Buffer.from(finalTx.serialize()).toString("base64");
       const submitRes = await fetchWithAuth(
