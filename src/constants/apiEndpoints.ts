@@ -17,6 +17,9 @@ export const TOKEN_ENDPOINTS = {
   CREATE_TOKEN_POOL: (id: string) => `tokens/${id}/pool`,
   FINALIZE_TOKEN_POOL: (id: string) => `tokens/${id}/pool/finalize`,
   FAILED_TOKEN_POOL: (id: string) => `tokens/${id}/pool/failed`,
+  // single-sign pool creation flow
+  CREATE_TOKEN_POOL_SINGLE_SIGN: (id: string) => `tokens/${id}/pool/single-sign`,
+  SUBMIT_TOKEN_POOL_SINGLE_SIGN: (id: string) => `tokens/${id}/pool/single-sign/submit`,
   // details
   GET_TOKEN_DETAIL: (id: string) => `tokens/${id}`,
   GET_TOKEN_LIST: `tokens/list`,

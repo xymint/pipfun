@@ -38,9 +38,9 @@ export default function TokenProcessingOverlay({ tokenId, draftId, onBackToCompl
     startedRef.current = true;
 
     try {
-      // 1) request pool creation transactions
-      const createPoolRes = await fetchWithAuth(
-        TOKEN_ENDPOINTS.CREATE_TOKEN_POOL(tokenId),
+      // 1) request unsigned transaction for single-sign
+      const initRes = await fetchWithAuth(
+        TOKEN_ENDPOINTS.CREATE_TOKEN_POOL_SINGLE_SIGN(tokenId),
         {
           method: "POST",
           headers: {
@@ -50,89 +50,60 @@ export default function TokenProcessingOverlay({ tokenId, draftId, onBackToCompl
         }
       );
 
-      if (!createPoolRes.ok) {
-        const err = await createPoolRes.json().catch(() => ({}));
-        try { useToastStore.getState().show(err?.error || "failed to get pool transactions", "error"); } catch {}
+      if (!initRes.ok) {
+        const err = await initRes.json().catch(() => ({}));
+        try { useToastStore.getState().show(err?.error || "failed to get unsigned pool transaction", "error"); } catch {}
         try { useOverlayStore.getState().resetOverlays(); } catch {}
         try { useTokenCreationFlowStore.getState().reset(); } catch {}
         return;
       }
 
-      const poolData = await createPoolRes.json();
-      const transactions: string[] = poolData?.transactions || [];
-      if (!Array.isArray(transactions) || transactions.length === 0) {
-        try { useToastStore.getState().show("no transactions received", "error"); } catch {}
+      const initJson = await initRes.json();
+      const txB64: string | undefined = initJson?.transaction;
+      const nonce: string | undefined = initJson?.nonce;
+      if (!txB64 || !nonce) {
+        try { useToastStore.getState().show("missing transaction or nonce", "error"); } catch {}
         try { useOverlayStore.getState().resetOverlays(); } catch {}
         try { useTokenCreationFlowStore.getState().reset(); } catch {}
         return;
       }
 
-      const signatures: string[] = [];
-      // If returned from mobile deeplink, consume signature from wallet store
-      const deeplink = useWalletStore.getState().deeplinkActionData;
-      const clearDeeplink = useWalletStore.getState().clearDeeplinkActionData;
-      const expectedCtx = tokenId ? `finalizePool:${tokenId}` : undefined;
-      if (deeplink?.action === "signAndSendTransaction" && deeplink.data.signature && (!expectedCtx || deeplink.data.context === expectedCtx)) {
-        signatures.push(deeplink.data.signature);
-        try { clearDeeplink(); } catch {}
+      // 2) sign locally with wallet
+      const signer: any = signerProvider as any;
+      if (!signer?.signTransaction) {
+        try { useToastStore.getState().show("wallet does not support signTransaction", "error"); } catch {}
+        try { useOverlayStore.getState().resetOverlays(); } catch {}
+        try { useTokenCreationFlowStore.getState().reset(); } catch {}
+        return;
       }
-      for (let i = signatures.length; i < transactions.length; i++) {
-        try {
-          const bytes = decodeBase64ToBytes(transactions[i]);
-          const tx = VersionedTransaction.deserialize(bytes);
-          const signer: any = signerProvider as any;
-          if (!signer?.signAndSendTransaction) {
-            throw new Error("wallet does not support signAndSendTransaction");
-          }
-          let signature: string | undefined;
-          try {
-            const res = await signer.signAndSendTransaction(tx, expectedCtx || "finalizePool");
-            signature = res?.signature as string | undefined;
-          } catch (e1: any) {
-            // some wallets do not accept extra context parameter
-            if (e1?.message?.includes("Missing or invalid parameters") || e1?.code === -32602) {
-              const res2 = await signer.signAndSendTransaction(tx);
-              signature = res2?.signature as string | undefined;
-            } else {
-              throw e1;
-            }
-          }
+      const bytes = decodeBase64ToBytes(txB64);
+      const tx = VersionedTransaction.deserialize(bytes);
+      const signedTx = (await signer.signTransaction(tx)) || tx;
 
-          if (!signature) throw new Error("missing signature after signAndSendTransaction");
-          signatures.push(signature);
-        } catch (signErr: any) {
-          console.error("[token-process] sign error", signErr);
-          const msg = signErr?.message || "failed to sign or send transaction";
-          try { useToastStore.getState().show(msg, "error"); } catch {}
-          try { useOverlayStore.getState().resetOverlays(); } catch {}
-          try { useTokenCreationFlowStore.getState().reset(); } catch {}
-          return;
+      // 3) submit signed transaction to server
+      const signedB64 = Buffer.from(signedTx.serialize()).toString("base64");
+      const submitRes = await fetchWithAuth(
+        TOKEN_ENDPOINTS.SUBMIT_TOKEN_POOL_SINGLE_SIGN(tokenId),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-wallet-address": signerAddress,
+          },
+          body: JSON.stringify({ transaction: signedB64, nonce }),
         }
+      );
+      if (!submitRes.ok) {
+        const err = await submitRes.json().catch(() => ({}));
+        try { useToastStore.getState().show(err?.error || "failed to submit signed transaction", "error"); } catch {}
+        try { useOverlayStore.getState().resetOverlays(); } catch {}
+        try { useTokenCreationFlowStore.getState().reset(); } catch {}
+        return;
       }
 
       useToastStore.getState().show("Transaction sent, waiting for finalization...", "success");
 
-      // 2) finalize with first signature
-      const finalizeRes = await fetchWithAuth(
-        TOKEN_ENDPOINTS.FINALIZE_TOKEN_POOL(tokenId),
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-wallet-address": signerAddress,
-          },
-          body: JSON.stringify({ signature: signatures[0] }),
-        }
-      );
-      if (!finalizeRes.ok) {
-        const err = await finalizeRes.json().catch(() => ({}));
-        try { useToastStore.getState().show(err?.error || "failed to finalize token pool", "error"); } catch {}
-        try { useOverlayStore.getState().resetOverlays(); } catch {}
-        try { useTokenCreationFlowStore.getState().reset(); } catch {}
-        return;
-      }
-
-      // 3) listen token status via WS
+      // 4) listen token status via WS
       setFinalTokenId(tokenId);
       const onStatus = (evt: { tokenId: string; status: "PENDING" | "PROCESSING" | "FINALIZING" | "MINTED" | "FAILED" }) => {
         if (evt.tokenId !== tokenId) return;
