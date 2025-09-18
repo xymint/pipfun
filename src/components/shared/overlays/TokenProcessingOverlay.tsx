@@ -12,10 +12,6 @@ import { useTokenCreationFlowStore } from "@/store/tokenCreationFlowStore";
 import { useOverlayStore } from "@/store/overlayStore";
 import { useToastStore } from "@/store/toastStore";
 
-const decodeBase64ToBytes = (b64: string): Uint8Array => {
-  const buf = Buffer.from(b64, "base64");
-  return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
-};
 
 export default function TokenProcessingOverlay({ tokenId, draftId, onBackToCompletion }: { tokenId?: string; draftId?: string; onBackToCompletion?: () => void }) {
   const step = useTokenCreationFlowStore((s) => s.step);
@@ -76,8 +72,8 @@ export default function TokenProcessingOverlay({ tokenId, draftId, onBackToCompl
         try { useTokenCreationFlowStore.getState().reset(); } catch {}
         return;
       }
-      const bytes = decodeBase64ToBytes(txB64);
-      const tx = VersionedTransaction.deserialize(bytes);
+      const bytes = Buffer.from(txB64, "base64");
+      const tx = VersionedTransaction.deserialize(new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength));
       const signedTx = (await signer.signTransaction(tx)) || tx;
 
       // 3) submit signed transaction to server
